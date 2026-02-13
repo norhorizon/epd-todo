@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NRF_EPD_D5B6 待办事项生成器</title>
+    
+    <!-- PWA 配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="待办生成器">
+    <meta name="theme-color" content="#667eea">
+    
     <style>
         * {
             margin: 0;
@@ -243,7 +250,6 @@
                     <input type="date" id="date">
                 </div>
                 
-                <!-- 新增：左下角自定义文字 -->
                 <div class="input-group">
                     <label>左下角文字</label>
                     <input type="text" id="bottomText" value="ZKC42VM 400×300" placeholder="自定义文字">
@@ -285,11 +291,54 @@
     </div>
 
     <script>
-        let todos = [
-            { text: '完成项目报告', priority: 'high', done: false },
-            { text: '回复客户邮件', priority: 'normal', done: true },
-            { text: '准备会议资料', priority: 'normal', done: false }
-        ];
+        // 从 localStorage 读取保存的待办事项
+        function loadTodos() {
+            const saved = localStorage.getItem('epd_todos');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.log('读取保存数据失败');
+                }
+            }
+            // 默认数据（第一次打开时）
+            return [
+                { text: '完成项目报告', priority: 'high', done: false },
+                { text: '回复客户邮件', priority: 'normal', done: true },
+                { text: '准备会议资料', priority: 'normal', done: false }
+            ];
+        }
+        
+        // 保存待办事项
+        function saveTodos() {
+            localStorage.setItem('epd_todos', JSON.stringify(todos));
+        }
+        
+        // 保存其他设置
+        function saveSettings() {
+            const settings = {
+                title: document.getElementById('title').value,
+                bottomText: document.getElementById('bottomText').value
+            };
+            localStorage.setItem('epd_settings', JSON.stringify(settings));
+        }
+        
+        // 读取设置
+        function loadSettings() {
+            const saved = localStorage.getItem('epd_settings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    document.getElementById('title').value = settings.title || '待办事项';
+                    document.getElementById('bottomText').value = settings.bottomText || 'ZKC42VM 400×300';
+                } catch (e) {
+                    console.log('读取设置失败');
+                }
+            }
+        }
+        
+        // 初始化数据
+        let todos = loadTodos();
         
         // 获取当前日期并格式化为 YYYY-MM-DD
         function getTodayDate() {
@@ -300,8 +349,9 @@
             return `${year}-${month}-${day}`;
         }
         
-        // 页面加载时，日期输入框默认显示今天
+        // 页面加载时
         document.getElementById('date').value = getTodayDate();
+        loadSettings();
         
         function renderTodoList() {
             const list = document.getElementById('todoList');
@@ -325,6 +375,7 @@
                 list.appendChild(item);
             });
             
+            saveTodos();
             drawPreview();
         }
         
@@ -345,6 +396,7 @@
         
         function updateText(index, text) {
             todos[index].text = text;
+            saveTodos();
             drawPreview();
         }
         
@@ -362,55 +414,46 @@
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
             
-            // 白色背景
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, 400, 300);
             
-            // 标题栏背景（红色）
             ctx.fillStyle = '#ff0000';
             ctx.fillRect(0, 0, 400, 50);
             
-            // 标题文字（左侧顶格）
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 24px "Microsoft YaHei", sans-serif';
             ctx.textBaseline = 'middle';
             const title = document.getElementById('title').value;
             ctx.fillText(title, 10, 25);
             
-            // 日期（右侧，从输入框读取）
             const date = document.getElementById('date').value;
             if (date) {
-                ctx.font = 'bold 14px "Microsoft YaHei", sans-serif';
+                ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
                 const dateWidth = ctx.measureText(date).width;
                 ctx.fillText(date, 400 - dateWidth - 10, 25);
             }
             
-            // 待办列表
             let y = 70;
             const lineHeight = 45;
             
             todos.forEach((todo, index) => {
                 if (y > 260) return;
                 
-                // 根据优先级设置颜色
                 if (todo.priority === 'high') {
                     ctx.fillStyle = '#ff0000';
                 } else {
                     ctx.fillStyle = '#000000';
                 }
                 
-                // 完成标记（方框）
                 ctx.font = 'bold 22px "Microsoft YaHei", sans-serif';
                 const check = todo.done ? '✓' : '□';
                 ctx.fillText(check, 15, y);
                 
-                // 任务文字
                 ctx.font = 'bold 20px "Microsoft YaHei", sans-serif';
                 if (todo.done) {
                     ctx.fillStyle = '#999999';
                 }
                 
-                // 截断长文本
                 let text = todo.text;
                 if (ctx.measureText(text).width > 320) {
                     while (ctx.measureText(text + '...').width > 320) {
@@ -424,15 +467,12 @@
                 y += lineHeight;
             });
             
-            // 底部信息
             ctx.fillStyle = '#000000';
             ctx.font = 'bold 14px "Microsoft YaHei", sans-serif';
             
-            // 左下角：自定义文字（从输入框读取）
             const bottomText = document.getElementById('bottomText').value || 'ZKC42VM 400×300';
             ctx.fillText(bottomText, 10, 290);
             
-            // 右下角：完成进度
             const total = todos.length;
             const completed = todos.filter(t => t.done).length;
             const progressText = `${completed}/${total}`;
@@ -443,19 +483,22 @@
         function downloadImage() {
             const canvas = document.getElementById('canvas');
             
-            // 创建临时链接下载
             const link = document.createElement('a');
             link.download = `todo_${new Date().getTime()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         }
         
-        // 监听输入变化
-        document.getElementById('title').addEventListener('input', drawPreview);
+        document.getElementById('title').addEventListener('input', function() {
+            drawPreview();
+            saveSettings();
+        });
         document.getElementById('date').addEventListener('change', drawPreview);
-        document.getElementById('bottomText').addEventListener('input', drawPreview);
+        document.getElementById('bottomText').addEventListener('input', function() {
+            drawPreview();
+            saveSettings();
+        });
         
-        // 初始化
         renderTodoList();
     </script>
 </body>
