@@ -243,6 +243,12 @@
                     <input type="date" id="date">
                 </div>
                 
+                <!-- 新增：左下角自定义文字 -->
+                <div class="input-group">
+                    <label>左下角文字</label>
+                    <input type="text" id="bottomText" value="ZKC42VM 400×300" placeholder="自定义文字">
+                </div>
+                
                 <h2 style="margin-top: 24px;">📝 任务列表</h2>
                 <div class="todo-list" id="todoList">
                     <!-- 动态生成 -->
@@ -366,7 +372,7 @@
             
             // 标题文字（左侧顶格）
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 24px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+            ctx.font = 'bold 24px "Microsoft YaHei", sans-serif';
             ctx.textBaseline = 'middle';
             const title = document.getElementById('title').value;
             ctx.fillText(title, 10, 25);
@@ -374,7 +380,7 @@
             // 日期（右侧，从输入框读取）
             const date = document.getElementById('date').value;
             if (date) {
-                ctx.font = 'bold 12px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+                ctx.font = 'bold 14px "Microsoft YaHei", sans-serif';
                 const dateWidth = ctx.measureText(date).width;
                 ctx.fillText(date, 400 - dateWidth - 10, 25);
             }
@@ -394,12 +400,12 @@
                 }
                 
                 // 完成标记（方框）
-                ctx.font = 'bold 22px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+                ctx.font = 'bold 22px "Microsoft YaHei", sans-serif';
                 const check = todo.done ? '✓' : '□';
                 ctx.fillText(check, 15, y);
                 
                 // 任务文字
-                ctx.font = 'bold 20px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+                ctx.font = 'bold 20px "Microsoft YaHei", sans-serif';
                 if (todo.done) {
                     ctx.fillStyle = '#999999';
                 }
@@ -420,10 +426,11 @@
             
             // 底部信息
             ctx.fillStyle = '#000000';
-            ctx.font = 'bold 14px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+            ctx.font = 'bold 14px "Microsoft YaHei", sans-serif';
             
-            // 左下角：可自定义文字
-            ctx.fillText('正在放假的方小科', 10, 290);
+            // 左下角：自定义文字（从输入框读取）
+            const bottomText = document.getElementById('bottomText').value || 'ZKC42VM 400×300';
+            ctx.fillText(bottomText, 10, 290);
             
             // 右下角：完成进度
             const total = todos.length;
@@ -446,6 +453,7 @@
         // 监听输入变化
         document.getElementById('title').addEventListener('input', drawPreview);
         document.getElementById('date').addEventListener('change', drawPreview);
+        document.getElementById('bottomText').addEventListener('input', drawPreview);
         
         // 初始化
         renderTodoList();
