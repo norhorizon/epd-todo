@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NRF_EPD_D5B6 待办事项生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .panel h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .input-group input[type="text"],
+        .input-group input[type="date"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .todo-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+        
+        .todo-item:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
+        
+        .todo-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .todo-item input[type="text"] {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+        }
+        
+        .priority-select {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .priority-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .priority-btn:hover {
+            transform: scale(1.2);
+        }
+        
+        .priority-btn.active {
+            border-color: #333;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px currentColor;
+        }
+        
+        .priority-low { background: #000; }
+        .priority-medium { background: #ff0000; }
+        .priority-high { background: #ff0000; }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+        
+        .preview-container {
+            text-align: center;
+        }
+        
+        #canvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 100%;
+            image-rendering: pixelated;
+            background: white;
+        }
+        
+        .download-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .tips {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #856404;
+        }
+        
+        .color-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 4px;
+        }
+        
+        .black { background: #000; }
+        .red { background: #ff0000; }
+        .white { background: #fff; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 NRF_EPD_D5B6 待办事项生成器</h1>
+        
+        <div class="main-layout">
+            <div class="panel">
+                <h2>⚙️ 设置</h2>
+                
+                <div class="input-group">
+                    <label>标题</label>
+                    <input type="text" id="title" value="待办事项" placeholder="输入标题">
+                </div>
+                
+                <div class="input-group">
+                    <label>日期</label>
+                    <input type="date" id="date">
+                </div>
+                
+                <h2 style="margin-top: 24px;">📝 任务列表</h2>
+                <div class="todo-list" id="todoList">
+                    <!-- 动态生成 -->
+                </div>
+                
+                <div style="margin-top: 16px; display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="addTodo()">+ 添加任务</button>
+                    <button class="btn btn-danger" onclick="clearCompleted()">清除已完成</button>
+                </div>
+                
+                <div class="tips">
+                    <strong>颜色说明：</strong><br>
+                    <span class="color-indicator black"></span>黑色 = 普通任务<br>
+                    <span class="color-indicator red"></span>红色 = 重要任务
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>👁️ 预览 (400×300)</h2>
+                <div class="preview-container">
+                    <canvas id="canvas" width="400" height="300"></canvas>
+                </div>
+                
+                <div class="download-section">
+                    <button class="btn btn-primary" onclick="downloadImage()" style="width: 100%;">
+                        📥 下载图片 (BMP格式)
+                    </button>
+                    <p style="margin-top: 12px; font-size: 13px; color: #666; text-align: center;">
+                        下载后使用 tsl0922 上位机蓝牙传输到价签
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let todos = [
+            { text: '完成项目报告', priority: 'high', done: false },
+            { text: '回复客户邮件', priority: 'normal', done: true },
+            { text: '准备会议资料', priority: 'normal', done: false }
+        ];
+        
+        // 获取当前日期并格式化为 YYYY-MM-DD
+        function getTodayDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // 页面加载时，日期输入框默认显示今天
+        document.getElementById('date').value = getTodayDate();
+        
+        function renderTodoList() {
+            const list = document.getElementById('todoList');
+            list.innerHTML = '';
+            
+            todos.forEach((todo, index) => {
+                const item = document.createElement('div');
+                item.className = 'todo-item';
+                item.innerHTML = `
+                    <input type="checkbox" ${todo.done ? 'checked' : ''} onchange="toggleDone(${index})">
+                    <input type="text" value="${todo.text}" onchange="updateText(${index}, this.value)" 
+                           style="${todo.done ? 'text-decoration: line-through; color: #999;' : ''}">
+                    <div class="priority-select">
+                        <div class="priority-btn priority-low ${todo.priority === 'low' ? 'active' : ''}" 
+                             onclick="setPriority(${index}, 'low')" title="普通"></div>
+                        <div class="priority-btn priority-high ${todo.priority === 'high' ? 'active' : ''}" 
+                             onclick="setPriority(${index}, 'high')" title="重要" style="background: #ff0000;"></div>
+                    </div>
+                    <button onclick="removeTodo(${index})" style="background: none; border: none; cursor: pointer; color: #999;">✕</button>
+                `;
+                list.appendChild(item);
+            });
+            
+            drawPreview();
+        }
+        
+        function addTodo() {
+            todos.push({ text: '新任务', priority: 'normal', done: false });
+            renderTodoList();
+        }
+        
+        function removeTodo(index) {
+            todos.splice(index, 1);
+            renderTodoList();
+        }
+        
+        function toggleDone(index) {
+            todos[index].done = !todos[index].done;
+            renderTodoList();
+        }
+        
+        function updateText(index, text) {
+            todos[index].text = text;
+            drawPreview();
+        }
+        
+        function setPriority(index, priority) {
+            todos[index].priority = priority;
+            renderTodoList();
+        }
+        
+        function clearCompleted() {
+            todos = todos.filter(t => !t.done);
+            renderTodoList();
+        }
+        
+        function drawPreview() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 白色背景
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 400, 300);
+            
+            // 标题栏背景（红色）
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(0, 0, 400, 50);
+            
+            // 标题文字（左侧顶格）
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+            ctx.textBaseline = 'middle';
+            const title = document.getElementById('title').value;
+            ctx.fillText(title, 10, 25);
+            
+            // 日期（右侧，从输入框读取）
+            const date = document.getElementById('date').value;
+            if (date) {
+                ctx.font = 'bold 12px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+                const dateWidth = ctx.measureText(date).width;
+                ctx.fillText(date, 400 - dateWidth - 10, 25);
+            }
+            
+            // 待办列表
+            let y = 70;
+            const lineHeight = 45;
+            
+            todos.forEach((todo, index) => {
+                if (y > 260) return;
+                
+                // 根据优先级设置颜色
+                if (todo.priority === 'high') {
+                    ctx.fillStyle = '#ff0000';
+                } else {
+                    ctx.fillStyle = '#000000';
+                }
+                
+                // 完成标记（方框）
+                ctx.font = 'bold 22px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+                const check = todo.done ? '✓' : '□';
+                ctx.fillText(check, 15, y);
+                
+                // 任务文字
+                ctx.font = 'bold 20px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+                if (todo.done) {
+                    ctx.fillStyle = '#999999';
+                }
+                
+                // 截断长文本
+                let text = todo.text;
+                if (ctx.measureText(text).width > 320) {
+                    while (ctx.measureText(text + '...').width > 320) {
+                        text = text.slice(0, -1);
+                    }
+                    text += '...';
+                }
+                
+                ctx.fillText(text, 45, y);
+                
+                y += lineHeight;
+            });
+            
+            // 底部信息
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 14px "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif';
+            
+            // 左下角：可自定义文字
+            ctx.fillText('正在放假的方小科', 10, 290);
+            
+            // 右下角：完成进度
+            const total = todos.length;
+            const completed = todos.filter(t => t.done).length;
+            const progressText = `${completed}/${total}`;
+            const progressWidth = ctx.measureText(progressText).width;
+            ctx.fillText(progressText, 400 - progressWidth - 10, 290);
+        }
+        
+        function downloadImage() {
+            const canvas = document.getElementById('canvas');
+            
+            // 创建临时链接下载
+            const link = document.createElement('a');
+            link.download = `todo_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // 监听输入变化
+        document.getElementById('title').addEventListener('input', drawPreview);
+        document.getElementById('date').addEventListener('change', drawPreview);
+        
+        // 初始化
+        renderTodoList();
+    </script>
+</body>
+</html>
